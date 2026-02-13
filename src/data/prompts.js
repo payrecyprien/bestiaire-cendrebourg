@@ -13,8 +13,19 @@
 
 import { HABITATS, LORE_CONNECTIONS } from "./world";
 
-export function buildCreaturePrompt({ creatureType, habitat, role, element, dangerLevel }) {
+export function buildCreaturePrompt({ creatureType, habitat, role, element, dangerLevel, questContext }) {
   const habitatInfo = HABITATS.find((h) => h.id === habitat);
+
+  const questSection = questContext ? `
+## CONTEXTE DE QUÊTE (la créature doit être liée à cette quête)
+**Quête** : ${questContext.title}
+**Description** : ${questContext.description}
+**Lieu** : ${questContext.location_id}
+**Type** : ${questContext.type}
+**Faction impliquée** : ${questContext.faction_involved}
+${questContext.objectives ? `**Objectifs** : ${questContext.objectives.join(", ")}` : ""}
+La créature générée doit être cohérente avec cette quête — elle pourrait en être un obstacle, un gardien, ou un élément clé.
+` : "";
 
   return `Tu es un illustrateur et game designer expert spécialisé dans la création de créatures pour un bestiaire de RPG médiéval-fantasy. Tu travailles dans l'univers de Cendrebourg.
 
@@ -23,7 +34,7 @@ Cendrebourg est un village fortifié assombri par des disparitions mystérieuses
 
 ## HABITAT DE LA CRÉATURE
 ${habitatInfo ? `**${habitatInfo.name}** : ${habitatInfo.description}` : "Habitat libre dans la région de Cendrebourg"}
-
+${questSection}
 ## TA MISSION
 Génère UNE créature de type "${creatureType}" avec un rôle de "${role}", d'élément "${element}", de niveau de danger ${dangerLevel}/5, habitant "${habitatInfo?.name || "la région de Cendrebourg"}".
 

@@ -685,6 +685,78 @@ input[type="range"] { accent-color: #8060b0; }
 .gallery-card-title { font-size: 11px; color: #7a6b8b; font-style: italic; }
 .gallery-card-meta { font-size: 11px; margin-top: 4px; display: flex; gap: 8px; justify-content: center; }
 
+/* ─── QUEST CONTEXT BANNER ─── */
+.quest-context-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  background: linear-gradient(90deg, rgba(90, 143, 212, 0.08), rgba(90, 143, 212, 0.04));
+  border-bottom: 1px solid rgba(90, 143, 212, 0.15);
+  z-index: 9;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.quest-context-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.quest-context-label {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #5a8fd4;
+  background: rgba(90, 143, 212, 0.1);
+  padding: 3px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.quest-context-title {
+  font-family: "Cinzel", serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5a8fd4;
+  white-space: nowrap;
+}
+
+.quest-context-desc {
+  font-size: 12px;
+  color: #6a7b9b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quest-context-dismiss {
+  background: rgba(128, 96, 176, 0.08);
+  border: 1px solid rgba(128, 96, 176, 0.15);
+  border-radius: 4px;
+  color: #8a7b9b;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.quest-context-dismiss:hover {
+  background: rgba(128, 96, 176, 0.15);
+}
+
+.tavern-btn {
+  background: rgba(212, 168, 86, 0.1) !important;
+  border-color: rgba(212, 168, 86, 0.2) !important;
+  color: #d4a856 !important;
+}
+
+.tavern-btn:hover {
+  background: rgba(212, 168, 86, 0.18) !important;
+}
+
 /* ─── ANIMATIONS ─── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }

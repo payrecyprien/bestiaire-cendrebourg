@@ -1,10 +1,23 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { buildCreaturePrompt } from "./data/prompts";
-import { CREATURE_TYPES, CREATURE_ROLES, ELEMENTS } from "./data/world";
+import { CREATURE_TYPES, CREATURE_ROLES, ELEMENTS, HABITATS } from "./data/world";
 import { generateCreature } from "./utils/api";
+import { readContextFromURL, clearURLContext, openGriffonNoir } from "./utils/context";
 import CreatureConfig from "./components/CreatureConfig";
 import CreatureDisplay from "./components/CreatureDisplay";
 import CollectionGallery from "./components/CollectionGallery";
+
+// Map forge location IDs to bestiaire habitat IDs
+const LOCATION_TO_HABITAT = {
+  brumesombre: "brumesombre",
+  ruines_nord: "ruines_nord",
+  mine: "mine",
+  chateau_varen: "souterrains",
+  griffon_noir: "brumesombre",
+  chapelle: "collines",
+  pont_ancien: "riviere",
+  marche: "marais",
+};
 
 const DEFAULT_CONFIG = {
   creatureType: "beast",
@@ -24,6 +37,24 @@ export default function App() {
   const [error, setError] = useState(null);
   const [collection, setCollection] = useState([]);
   const [showGallery, setShowGallery] = useState(false);
+  const [questContext, setQuestContext] = useState(null);
+
+  // Read quest context from URL on mount
+  useEffect(() => {
+    const ctx = readContextFromURL();
+    if (ctx?.quest && ctx.source === "forge") {
+      setQuestContext(ctx.quest);
+      // Pre-select habitat based on quest location
+      const habitat = LOCATION_TO_HABITAT[ctx.quest.location_id] || "brumesombre";
+      // Set danger level based on quest difficulty
+      setConfig((prev) => ({
+        ...prev,
+        habitat,
+        dangerLevel: Math.min(5, Math.max(1, ctx.quest.difficulty || 3)),
+      }));
+      clearURLContext();
+    }
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     setIsLoading(true);
@@ -40,13 +71,18 @@ export default function App() {
         role: roleLabel,
         element: elementLabel,
         dangerLevel: config.dangerLevel,
+        questContext: questContext, // Pass quest context to prompt builder
       });
+
+      const questHint = questContext
+        ? ` Cette créature doit être liée à la quête "${questContext.title}" : ${questContext.description}`
+        : "";
 
       const result = await generateCreature({
         model: config.model,
         temperature: config.temperature,
         systemPrompt,
-        userMessage: `Génère une créature de type ${typeLabel}, rôle ${roleLabel}, élément ${elementLabel}, danger ${config.dangerLevel}/5. Sois créatif et original.`,
+        userMessage: `Génère une créature de type ${typeLabel}, rôle ${roleLabel}, élément ${elementLabel}, danger ${config.dangerLevel}/5.${questHint} Sois créatif et original.`,
       });
 
       if (result.parseError) {
@@ -62,17 +98,23 @@ export default function App() {
     }
 
     setIsLoading(false);
-  }, [config]);
+  }, [config, questContext]);
 
   const handleAddToCollection = () => {
     if (!creature) return;
-    if (collection.some((c) => c.name === creature.name)) return; // no dupes
+    if (collection.some((c) => c.name === creature.name)) return;
     setCollection((prev) => [...prev, creature]);
   };
 
   const handleSelectFromCollection = (c) => {
     setCreature(c);
     setMeta(null);
+  };
+
+  const handleSendToTavern = () => {
+    if (collection.length === 0 && !creature) return;
+    const creatures = collection.length > 0 ? collection : [creature];
+    openGriffonNoir(questContext, creatures);
   };
 
   const handleExportJSON = () => {
@@ -97,6 +139,8 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  const dismissQuestContext = () => setQuestContext(null);
+
   return (
     <div className="app-container">
       <div className="grain-overlay" />
@@ -107,11 +151,28 @@ export default function App() {
           <span className="header-subtitle">Générateur de créatures par IA</span>
         </div>
         <div className="header-right">
+          {(collection.length > 0 || creature) && (
+            <button className="header-btn tavern-btn" onClick={handleSendToTavern}>
+              ⚔️ En parler à la taverne →
+            </button>
+          )}
           <button className="header-btn" onClick={() => setShowGallery(true)}>
             📖 Collection ({collection.length})
           </button>
         </div>
       </header>
+
+      {/* Quest context banner */}
+      {questContext && (
+        <div className="quest-context-banner">
+          <div className="quest-context-content">
+            <span className="quest-context-label">🗺️ Quête liée</span>
+            <span className="quest-context-title">{questContext.title}</span>
+            <span className="quest-context-desc">{questContext.description?.slice(0, 100)}...</span>
+          </div>
+          <button className="quest-context-dismiss" onClick={dismissQuestContext}>✕</button>
+        </div>
+      )}
 
       <div className="main-layout">
         <CreatureConfig
@@ -141,9 +202,13 @@ export default function App() {
           ) : (
             <div className="empty-state">
               <div className="empty-icon">📖</div>
-              <div className="empty-title">Le bestiaire attend</div>
+              <div className="empty-title">
+                {questContext ? "Créez des créatures pour votre quête" : "Le bestiaire attend"}
+              </div>
               <div className="empty-sub">
-                Choisissez un type de créature, un habitat et un élément, puis invoquez une créature des ténèbres de Cendrebourg.
+                {questContext
+                  ? `Générez des créatures pour "${questContext.title}". L'habitat et la difficulté ont été pré-configurés d'après la quête.`
+                  : "Choisissez un type de créature, un habitat et un élément, puis invoquez une créature des ténèbres de Cendrebourg."}
               </div>
             </div>
           )}
